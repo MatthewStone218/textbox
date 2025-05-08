@@ -19,9 +19,74 @@ function __textbox_class_element__(struct) constructor{
 	cursor_pos = struct[$"cursor_pos"] ?? 0;
 	cursor_drag_start_pos = struct[$"cursor_drag_start_pos"] ?? 0;
 	tab_space_count = struct[$"tab_space_count"] ?? 6;
+	focused = struct[$"focused"] ?? false;
 	tab_space_string = "";
 	for(var i = 0; i < tab_space_count; i++){
 		tab_space_string += " ";
+	}
+	
+	function handle_input(str){
+		if(focused){
+			if(keyboard_check_pressed(vk_backspace)){
+				text = string_delete(str,string_length(str),1);
+			}
+		}
+	}
+	
+	function draw(){
+		var _halign_prev = draw_get_halign();
+		var _valign_prev = draw_get_valign();
+		var _font_prev = draw_get_font();
+		var _alpha_prev = draw_get_alpha();
+		var _color_prev = draw_get_color();
+	
+		draw_set_halign(fa_left);//intended
+		draw_set_valign(fa_top);
+		draw_set_font(font);
+		draw_set_alpha(alpha);
+		draw_set_color(color);
+		
+		draw_text_transformed(x,y,text,xscale,yscale,0);
+		
+		draw_set_halign(_halign_prev);
+		draw_set_valign(_valign_prev);
+		draw_set_font(_font_prev);
+		draw_set_alpha(_alpha_prev);
+		draw_set_color(_color_prev);
+	}
+	
+	function draw_cursor(){
+		var _halign_prev = draw_get_halign();
+		var _valign_prev = draw_get_valign();
+		var _font_prev = draw_get_font();
+		var _alpha_prev = draw_get_alpha();
+		var _color_prev = draw_get_color();
+	
+		draw_set_halign(fa_left);//intended
+		draw_set_valign(fa_top);
+		draw_set_font(font);
+		draw_set_alpha(alpha);
+		draw_set_color(color);
+		
+		var _coord = __textbox_get_text_coord__(cursor_pos);
+		draw_text_transformed(_coord[0],_coord[1],"|",xscale,yscale,0);
+		
+		draw_set_halign(_halign_prev);
+		draw_set_valign(_valign_prev);
+		draw_set_font(_font_prev);
+		draw_set_alpha(_alpha_prev);
+		draw_set_color(_color_prev);
+	}
+	
+	function get_focus(xx = mouse_x, yy = mouse_y){
+		cursor_pos = __textbox_get_text_pos__([xx,yy]);
+		cursor_drag_start_pos = cursor_pos;
+		focused = true;
+	}
+	
+	function lose_focus(){
+		cursor_drag_start_pos = cursor_pos;
+		focused = false;
 	}
 }
 
