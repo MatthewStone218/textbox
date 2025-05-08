@@ -6,6 +6,8 @@ function textbox(){
 
 function __textbox_class_element__(struct) constructor{
 	text = struct[$"text"] ?? "";
+	x = struct[$"x"] ?? x;
+	y = struct[$"y"] ?? y;
 	halign = struct[$"halign"] ?? draw_get_halign();
 	valign = struct[$"valign"] ?? draw_get_valign();
 	font = struct[$"font"] ?? draw_get_font();
@@ -23,11 +25,16 @@ function __textbox_class_element__(struct) constructor{
 	}
 }
 
-function __textbox_get_text_coord__(pos,coord){
+function __textbox_get_text_coord__(pos){
 	var _ime_string = get_IME_string();
 	
 	var _text = string_insert(_ime_string,text,pos+1);
 	pos += string_length(_ime_string);
+	
+	if(string_width(_text) == 0 || string_height(_text) == 0){
+		_text = " ";
+		pos = 1;
+	}	
 	
 	var _text_full_line = string_copy(_text,1,string_pos_ext("\n",_text,pos));
 	if(string_pos_ext("\n",_text,pos) == 0){
@@ -60,7 +67,6 @@ function __textbox_get_text_coord__(pos,coord){
 	var _height = string_height(_text)*yscale;
 	var _last_line_width = string_width(_text_last_line)*xscale;
 	var _last_full_line_width = string_width(_text_last_full_line)*xscale;
-	var _height = string_height(_text)*yscale;
 	
 	draw_set_halign(_halign_prev);
 	draw_set_valign(_valign_prev);
@@ -81,10 +87,53 @@ function __textbox_get_text_coord__(pos,coord){
 		_v_adjust = -1;
 	}
 	
-	var _x = coord[0]+_last_line_width+_last_full_line_width*_last_line_h_adjust;
-	var _y = coord[1]+_height*_v_adjust;
+	var _x = x+_last_line_width+_last_full_line_width*_last_line_h_adjust;
+	var _y = y+_height*_v_adjust;
 	
 	return [_x,_y];
+}
+
+function __textbox_get_text_pos__(coord){
+	var _text = text;
+	
+	var _halign_prev = draw_get_halign();
+	var _valign_prev = draw_get_valign();
+	var _font_prev = draw_get_font();
+	
+	draw_set_halign(halign);
+	draw_set_valign(valign);
+	draw_set_font(font);
+	
+	//y
+	var _nearest_dis = 0;
+	var _dis = 0;
+	var _ln_pos = 0;
+
+	while(_nearest_dis < _dis){
+		_ln_pos = string_pos_ext("\n",_text,_ln_pos+1);
+		if(_ln_pos > 0){
+			_dis = abs(__textbox_get_text_coord__(_ln_pos)[1] - coord[1]);
+			if(_nearest_dis > _dis){
+				_nearest_dis = _dis;
+			}
+		} else {
+			_dis = abs(__textbox_get_text_coord__(string_length(_text))[1] - coord[1]);
+			if(_nearest_dis > _dis){
+				_nearest_dis = _dis;
+			}
+			break;
+		}
+	}
+	
+	var _line = string_copy(_text, _ln_pos+1,string_length(_text));
+	var _ln_pos_2 = string_pos_ext("\n",_text,_ln_pos+1);
+	if(_ln_pos_2 > 0){
+		_line = string_copy(_text,_ln_pos,_ln_pos_2);
+	}
+	
+	draw_set_halign(_halign_prev);
+	draw_set_valign(_valign_prev);
+	draw_set_font(_font_prev);
 }
 
 function get_IME_string(){
