@@ -38,6 +38,7 @@
   "name":"textbox",
   "resources":[
     {"id":{"name":"ext_IME_helper","path":"extensions/ext_IME_helper/ext_IME_helper.yy",},},
+    {"id":{"name":"obj_test_system","path":"objects/obj_test_system/obj_test_system.yy",},},
     {"id":{"name":"obj_textbox","path":"objects/obj_textbox/obj_textbox.yy",},},
     {"id":{"name":"rm_test","path":"rooms/rm_test/rm_test.yy",},},
     {"id":{"name":"scr_textbox","path":"scripts/scr_textbox/scr_textbox.yy",},},

@@ -1,34 +1,40 @@
 // v2.3.0에 대한 스크립트 어셋 변경됨 자세한 정보는
 // https://help.yoyogames.com/hc/en-us/articles/360005277377 참조
-function textbox(){
-	return __textbox_class_element__();
+function textbox(struct = {}){
+	struct[$"x"] ??= x;
+	struct[$"y"] ??= y;
+	return new __textbox_class_element__(struct);
 }
 
 function __textbox_class_element__(struct) constructor{
 	text = struct[$"text"] ?? "";
 	x = struct[$"x"] ?? x;
 	y = struct[$"y"] ?? y;
-	halign = struct[$"halign"] ?? draw_get_halign();
-	valign = struct[$"valign"] ?? draw_get_valign();
+	halign = struct[$"halign"] ?? fa_left;
+	valign = struct[$"valign"] ?? fa_top;
 	font = struct[$"font"] ?? draw_get_font();
-	color = struct[$"color"] ?? draw_get_color();
-	alpha = struct[$"alpha"] ?? draw_get_alpha();
+	color = struct[$"color"] ?? c_black;
+	alpha = struct[$"alpha"] ?? 1;
 	xscale = struct[$"xscale"] ?? 1;
 	yscale = struct[$"yscale"] ?? 1;
 	oneline = struct[$"oneline"] ?? false;
 	cursor_pos = struct[$"cursor_pos"] ?? 0;
 	cursor_drag_start_pos = struct[$"cursor_drag_start_pos"] ?? 0;
 	tab_space_count = struct[$"tab_space_count"] ?? 6;
-	focused = struct[$"focused"] ?? false;
+	is_focused = struct[$"is_focused"] ?? false;
 	tab_space_string = "";
 	for(var i = 0; i < tab_space_count; i++){
 		tab_space_string += " ";
 	}
 	
 	function handle_input(str){
-		if(focused){
+		if(is_focused){
 			if(keyboard_check_pressed(vk_backspace)){
-				text = string_delete(str,string_length(str),1);
+				text = string_delete(str,cursor_pos,1);
+			} else if(keyboard_check_pressed(vk_enter) && !oneline){
+				text = string_insert("\n\u200B",text,cursor_pos);
+			} else {
+				__textbox_push_input__();
 			}
 		}
 	}
@@ -46,7 +52,7 @@ function __textbox_class_element__(struct) constructor{
 		draw_set_alpha(alpha);
 		draw_set_color(color);
 		
-		draw_text_transformed(x,y,text,xscale,yscale,0);
+		draw_text_transformed(x,y,string_insert(get_IME_string(),text,cursor_pos+1),xscale,yscale,0);
 		
 		draw_set_halign(_halign_prev);
 		draw_set_valign(_valign_prev);
@@ -78,16 +84,21 @@ function __textbox_class_element__(struct) constructor{
 		draw_set_color(_color_prev);
 	}
 	
-	function get_focus(xx = mouse_x, yy = mouse_y){
+	function gain_focus(xx = mouse_x, yy = mouse_y){
 		cursor_pos = __textbox_get_text_pos__([xx,yy]);
 		cursor_drag_start_pos = cursor_pos;
-		focused = true;
+		is_focused = true;
 	}
 	
 	function lose_focus(){
 		cursor_drag_start_pos = cursor_pos;
-		focused = false;
+		is_focused = false;
 	}
+}
+
+function __textbox_push_input__(){
+	text = string_insert(str,text,cursor_pos+1);
+	cursor_pos += string_length(str);
 }
 
 function __textbox_get_text_coord__(pos){
@@ -97,8 +108,11 @@ function __textbox_get_text_coord__(pos){
 	pos += string_length(_ime_string);
 	
 	if(string_width(_text) == 0 || string_height(_text) == 0){
-		_text = " ";
-		pos = 1;
+		_text = string_replace(_text,"\u200B"," ");
+		if(_text == ""){
+			_text = " ";
+			pos = 1;
+		}
 	}	
 	
 	var _text_full_line = string_copy(_text,1,string_pos_ext("\n",_text,pos));
@@ -147,7 +161,7 @@ function __textbox_get_text_coord__(pos){
 	}
 	
 	if(valign == fa_middle){
-		_v_adjust = -0.5;
+		_v_adjust = -0.5;show_message(1)
 	} else if(valign == fa_bottom){
 		_v_adjust = -1;
 	}
