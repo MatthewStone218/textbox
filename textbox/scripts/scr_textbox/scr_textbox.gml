@@ -139,7 +139,7 @@ function __textbox_get_text_pos__(coord){
 	}
 	
 	//result
-	return _x_pos;
+	return _pos;
 }
 
 function get_IME_string(){
