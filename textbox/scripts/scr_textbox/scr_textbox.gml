@@ -30,11 +30,16 @@ function __textbox_class_element__(struct) constructor{
 	function handle_input(str){
 		if(is_focused){
 			if(keyboard_check_pressed(vk_backspace)){
+				__textbox_push_input__(str);
 				text = string_delete(str,cursor_pos,1);
 			} else if(keyboard_check_pressed(vk_enter) && !oneline){
+				__textbox_push_input__(str);
 				text = string_insert("\n\u200B",text,cursor_pos);
+				if(string_char_at(text,1) == "\n"){
+					text = string_insert("\u200B",text,1);
+				}
 			} else {
-				__textbox_push_input__();
+				__textbox_push_input__(str);
 			}
 		}
 	}
@@ -84,19 +89,21 @@ function __textbox_class_element__(struct) constructor{
 		draw_set_color(_color_prev);
 	}
 	
-	function gain_focus(xx = mouse_x, yy = mouse_y){
+	function gain_focus(xx = mouse_x, yy = mouse_y, str = keyboard_string){
+		__textbox_push_input__(str);
 		cursor_pos = __textbox_get_text_pos__([xx,yy]);
 		cursor_drag_start_pos = cursor_pos;
 		is_focused = true;
 	}
 	
-	function lose_focus(){
+	function lose_focus(str = keyboard_string){
+		__textbox_push_input__(str);
 		cursor_drag_start_pos = cursor_pos;
 		is_focused = false;
 	}
 }
 
-function __textbox_push_input__(){
+function __textbox_push_input__(str){
 	text = string_insert(str,text,cursor_pos+1);
 	cursor_pos += string_length(str);
 }
@@ -143,7 +150,7 @@ function __textbox_get_text_coord__(pos){
 	draw_set_valign(valign);
 	draw_set_font(font);
 	
-	var _height = string_height(_text)*yscale;
+	var _height = (string_height(_text)-string_height(_text_last_full_line))*yscale;
 	var _last_line_width = string_width(_text_last_line)*xscale;
 	var _last_full_line_width = string_width(_text_last_full_line)*xscale;
 	
@@ -161,13 +168,13 @@ function __textbox_get_text_coord__(pos){
 	}
 	
 	if(valign == fa_middle){
-		_v_adjust = -0.5;show_message(1)
+		_v_adjust = -0.5;
 	} else if(valign == fa_bottom){
 		_v_adjust = -1;
 	}
 	
 	var _x = x+_last_line_width+_last_full_line_width*_last_line_h_adjust;
-	var _y = y+_height*_v_adjust;
+	var _y = y+_height*(1-_v_adjust);
 	
 	return [_x,_y];
 }
@@ -204,13 +211,14 @@ function __textbox_get_text_pos__(coord){
 	
 	var _nearest_dis = 0;
 	var _dis = 0;
-	var _pos = 0;
 	var _idx = _ln_pos;
+	var _pos = _idx;
 	for(var i = 1; i < string_length(_line)+1; i++){
 		_idx = _ln_pos+i;
 		var _char_coord = __textbox_get_text_coord__(_idx);
-		if(abs(_char_coord[0]-coord[0]) < _dis){
-			_dis = _char_coord;
+		var _dis = abs(_char_coord[0]-coord[0]);
+		if(_nearest_dis >= _dis){
+			_nearest_dis = _dis;
 			_pos = _idx;
 		} else {
 			break;
