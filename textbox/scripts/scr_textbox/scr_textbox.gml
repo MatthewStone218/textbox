@@ -95,15 +95,6 @@ function __textbox_get_text_coord__(pos){
 
 function __textbox_get_text_pos__(coord){
 	var _text = text;
-	
-	var _halign_prev = draw_get_halign();
-	var _valign_prev = draw_get_valign();
-	var _font_prev = draw_get_font();
-	
-	draw_set_halign(halign);
-	draw_set_valign(valign);
-	draw_set_font(font);
-	
 	//y
 	var _nearest_dis = 0;
 	var _dis = 0;
@@ -113,27 +104,42 @@ function __textbox_get_text_pos__(coord){
 		_ln_pos = string_pos_ext("\n",_text,_ln_pos+1);
 		if(_ln_pos > 0){
 			_dis = abs(__textbox_get_text_coord__(_ln_pos)[1] - coord[1]);
-			if(_nearest_dis > _dis){
+			if(_nearest_dis >= _dis){
 				_nearest_dis = _dis;
 			}
 		} else {
 			_dis = abs(__textbox_get_text_coord__(string_length(_text))[1] - coord[1]);
-			if(_nearest_dis > _dis){
+			if(_nearest_dis >= _dis){
 				_nearest_dis = _dis;
 			}
 			break;
 		}
 	}
 	
+	//x
 	var _line = string_copy(_text, _ln_pos+1,string_length(_text));
 	var _ln_pos_2 = string_pos_ext("\n",_text,_ln_pos+1);
 	if(_ln_pos_2 > 0){
-		_line = string_copy(_text,_ln_pos,_ln_pos_2);
+		_line = string_copy(_text,_ln_pos+1,_ln_pos_2-_ln_pos+1);
 	}
 	
-	draw_set_halign(_halign_prev);
-	draw_set_valign(_valign_prev);
-	draw_set_font(_font_prev);
+	var _nearest_dis = 0;
+	var _dis = 0;
+	var _pos = 0;
+	var _idx = _ln_pos;
+	for(var i = 1; i < string_length(_line)+1; i++){
+		_idx = _ln_pos+i;
+		var _char_coord = __textbox_get_text_coord__(_idx);
+		if(abs(_char_coord[0]-coord[0]) < _dis){
+			_dis = _char_coord;
+			_pos = _idx;
+		} else {
+			break;
+		}
+	}
+	
+	//result
+	return _x_pos;
 }
 
 function get_IME_string(){
