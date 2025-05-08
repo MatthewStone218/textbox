@@ -16,6 +16,43 @@ function __textbox_class_element__(struct) constructor{
 	oneline = struct[$"oneline"] ?? false;
 	cursor_pos = struct[$"cursor_pos"] ?? 0;
 	cursor_drag_start_pos = struct[$"cursor_drag_start_pos"] ?? 0;
+	tab_space_count = struct[$"tab_space_count"] ?? 6;
+	tab_space_string = "";
+	for(var i = 0; i < tab_space_count; i++){
+		tab_space_string += " ";
+	}
+}
+
+function __textbox_get_text_coord__(pos,coord){
+	var _ime_string = get_IME_string();
+	
+	var _text = string_insert(_ime_string,text,pos+1);
+	pos += string_length(_ime_string);
+	
+	var _text_full_line = string_copy(_text,1,string_pos_ext("\n",_text,pos));
+	if(string_pos_ext("\n",_text,pos) == 0){
+		_text_full_line = _text;
+	}
+	
+	_text = string_copy(_text,1,pos);
+	
+	_text = string_replace_all(_text,"\t",tab_space_string);
+	_text_full_line = string_replace_all(_text_full_line,"\t",tab_space_string);
+	
+	var _text_last_full_line = _text_full_line;
+	while(string_pos("\n",_text_last_full_line) > 0){
+		_text_last_full_line = string_delete(_text_last_full_line,1,string_pos("\n",_text_last_full_line));
+	}
+	
+	var _halign_prev = draw_get_halign();
+	var _valign_prev = draw_get_valign();
+	var _font_prev = draw_get_font();
+	draw_set_halign(halign);
+	draw_set_valign(valign);
+	draw_set_font(font);
+	var _width = string_width(_text)*xscale;
+	var _last_full_line_width = string_width(_text_last_full_line)*xscale;
+	var _height = string_height(_text)*yscale;
 }
 
 function get_IME_string(){
