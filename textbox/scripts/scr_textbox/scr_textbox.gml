@@ -188,44 +188,28 @@ function __textbox_get_text_pos__(coord){
 	coord[1] += _last_char_half_height;
 	
 	//y
-	var _nearest_dis = 10000000000;
-	var _dis = 10000000000;
-	var _ln_pos = 1;
-	var _pos = 1;
-
-	while(_ln_pos >= _pos){
-		_pos = _ln_pos;
-		_ln_pos = string_pos_ext("\n",_text,_ln_pos+1);
-		if(_ln_pos > 0){
-			if(_nearest_dis >= _dis){
-				_dis = abs(__textbox_get_text_coord__(_ln_pos)[1] - coord[1]);
-				_nearest_dis = _dis;
-			}
-		} else {
-			break;
-		}
-	}
-	//x
-	var _line = string_copy(_text, _ln_pos+1,string_length(_text));
-	var _ln_pos_2 = string_pos_ext("\n",_text,_ln_pos+1);
-	if(_ln_pos_2 > 0){
-		_line = string_copy(_text,_ln_pos+1,_ln_pos_2-_ln_pos+1);
+	var	_dis,_next_dis;
+	var	_pos = 0;
+	var	_pos_2 = string_pos("\n",_text);
+		
+	do{
+		_dis = abs(__textbox_get_text_coord__(_pos)[1] - coord[1]);
+		_next_dis = abs(__textbox_get_text_coord__(_pos_2)[1] - coord[1]);
+		_pos = string_pos_ext("\n",_text,_pos+1);
+		_pos_2 = string_pos_ext("\n",_text,_pos+1);//not same. a=a+1 -> b=a+1 -> b=a+2
+	}until(_pos_2 == 0 || _next_dis > _dis)
+	
+	if(_pos_2 == 0){
+		_pos_2 = string_length(_text);
 	}
 	
-	var _nearest_dis = 10000000000;
-	var _dis = 10000000000;
-	for(var i = 1; i < string_length(_line)+1; i++){
-		if(_nearest_dis >= _dis){
-			_nearest_dis = _dis;
-			_pos++;
+	//x
+	for(_pos = _pos; _pos < _pos_2; _pos++){
+		_dis = abs(__textbox_get_text_coord__(_pos)[1] - coord[1]);
+		_next_dis = abs(__textbox_get_text_coord__(_pos+1)[1] - coord[1]);
+		if(_next_dis < _dis){
+			break;
 		}
-		
-		var _char_coord = __textbox_get_text_coord__(_pos+i);
-		var _dis = abs(_char_coord[0]-coord[0]);
-	}
-	if(_nearest_dis >= _dis){
-		_nearest_dis = _dis;
-		_pos++;
 	}
 	
 	//result
