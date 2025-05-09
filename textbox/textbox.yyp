@@ -28,7 +28,6 @@
   ],
   "IncludedFiles":[
     {"$GMIncludedFile":"","%Name":"NanumGothic.ttf","CopyToMask":-1,"filePath":"datafiles","name":"NanumGothic.ttf","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
-    {"$GMIncludedFile":"","%Name":"NanumGothic.ttf","CopyToMask":-1,"filePath":"datafiles","name":"NanumGothic.ttf","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
   ],
   "isEcma":false,
   "LibraryEmitters":[],

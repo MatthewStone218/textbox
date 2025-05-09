@@ -6,6 +6,8 @@ function textbox(struct = {}){
 	return new __textbox_class_element__(struct);
 }
 
+//빈 문자나 탭 문자는 모두 text에 당초 포함되는 게 전재. tab, ime만 계산시 직전 적용
+
 function __textbox_class_element__(struct) constructor{
 	text = struct[$"text"] ?? "";
 	x = struct[$"x"] ?? x;
@@ -31,16 +33,17 @@ function __textbox_class_element__(struct) constructor{
 		if(is_focused){
 			if(keyboard_check_pressed(vk_backspace)){
 				__textbox_push_input__(str);
-				text = string_delete(str,cursor_pos,1);
+				text = string_delete(text,cursor_pos,1);
+				cursor_pos -= 1;
 			} else if(keyboard_check_pressed(vk_enter) && !oneline){
 				__textbox_push_input__(str);
-				text = string_insert("\n\u200B",text,cursor_pos);
-				if(string_char_at(text,1) == "\n"){
-					text = string_insert("\u200B",text,1);
-				}
+				text = string_insert("\n\u200B",text,cursor_pos+1);
+				cursor_pos += 2;
 			} else {
 				__textbox_push_input__(str);
 			}
+			
+			cursor_pos = median(1,cursor_pos,string_length(text));
 		}
 	}
 	
@@ -114,14 +117,6 @@ function __textbox_get_text_coord__(pos){
 	var _text = string_insert(_ime_string,text,pos+1);
 	pos += string_length(_ime_string);
 	
-	if(string_width(_text) == 0 || string_height(_text) == 0){
-		_text = string_replace(_text,"\u200B"," ");
-		if(_text == ""){
-			_text = " ";
-			pos = 1;
-		}
-	}	
-	
 	var _text_full_line = string_copy(_text,1,string_pos_ext("\n",_text,pos));
 	if(string_pos_ext("\n",_text,pos) == 0){
 		_text_full_line = _text;
@@ -180,23 +175,38 @@ function __textbox_get_text_coord__(pos){
 }
 
 function __textbox_get_text_pos__(coord){
+	coord = variable_clone(coord);
 	var _text = text;
+	
+	var _font_prev = draw_get_font();
+	draw_set_font(font);
+	var _last_char = string_char_at(_text,string_length(_text));
+	var _last_char_half_width = string_width(_last_char)*xscale/2;
+	var _last_char_half_height = string_height(_last_char)*yscale/2;
+	draw_set_font(_font_prev);
+	
+	coord[0] += _last_char_half_width;
+	coord[1] += _last_char_half_height;
+	
 	//y
-	var _nearest_dis = 0;
-	var _dis = 0;
+	var _nearest_dis = 10000000000;
+	var _dis = 10000000000;
 	var _ln_pos = 0;
+	var _pos = 1;
 
-	while(_nearest_dis < _dis){
+	while(_nearest_dis >= _dis){
+		_pos = _ln_pos;
 		_ln_pos = string_pos_ext("\n",_text,_ln_pos+1);
 		if(_ln_pos > 0){
-			_dis = abs(__textbox_get_text_coord__(_ln_pos)[1] - coord[1]);
 			if(_nearest_dis >= _dis){
 				_nearest_dis = _dis;
+				_dis = abs(__textbox_get_text_coord__(_ln_pos)[1] - coord[1]);
 			}
 		} else {
-			_dis = abs(__textbox_get_text_coord__(string_length(_text))[1] - coord[1]);
 			if(_nearest_dis >= _dis){
 				_nearest_dis = _dis;
+				_dis = abs(__textbox_get_text_coord__(string_length(_text))[1] - coord[1]);
+				_pos = _ln_pos;
 			}
 			break;
 		}
@@ -209,20 +219,20 @@ function __textbox_get_text_pos__(coord){
 		_line = string_copy(_text,_ln_pos+1,_ln_pos_2-_ln_pos+1);
 	}
 	
-	var _nearest_dis = 0;
-	var _dis = 0;
-	var _idx = _ln_pos;
-	var _pos = _idx;
+	var _nearest_dis = 10000000000;
+	var _dis = 10000000000;
 	for(var i = 1; i < string_length(_line)+1; i++){
-		_idx = _ln_pos+i;
-		var _char_coord = __textbox_get_text_coord__(_idx);
-		var _dis = abs(_char_coord[0]-coord[0]);
 		if(_nearest_dis >= _dis){
 			_nearest_dis = _dis;
-			_pos = _idx;
-		} else {
-			break;
+			_pos++;
 		}
+		
+		var _char_coord = __textbox_get_text_coord__(_pos+i);
+		var _dis = abs(_char_coord[0]-coord[0]);
+	}
+	if(_nearest_dis >= _dis){
+		_nearest_dis = _dis;
+		_pos++;
 	}
 	
 	//result
