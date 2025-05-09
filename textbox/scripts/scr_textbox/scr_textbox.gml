@@ -9,7 +9,7 @@ function textbox(struct = {}){
 //빈 문자나 탭 문자는 모두 text에 당초 포함되는 게 전재. tab, ime만 계산시 직전 적용
 
 function __textbox_class_element__(struct) constructor{
-	text = struct[$"text"] ?? "";
+	text = "\u200B" + (struct[$"text"] ?? "") + "\u200B";
 	x = struct[$"x"] ?? x;
 	y = struct[$"y"] ?? y;
 	halign = struct[$"halign"] ?? fa_left;
@@ -20,7 +20,7 @@ function __textbox_class_element__(struct) constructor{
 	xscale = struct[$"xscale"] ?? 1;
 	yscale = struct[$"yscale"] ?? 1;
 	oneline = struct[$"oneline"] ?? false;
-	cursor_pos = struct[$"cursor_pos"] ?? 0;
+	cursor_pos = struct[$"cursor_pos"] ?? 2;
 	cursor_drag_start_pos = struct[$"cursor_drag_start_pos"] ?? 0;
 	tab_space_count = struct[$"tab_space_count"] ?? 6;
 	is_focused = struct[$"is_focused"] ?? false;
@@ -39,6 +39,9 @@ function __textbox_class_element__(struct) constructor{
 				__textbox_push_input__(str);
 				text = string_insert("\n\u200B",text,cursor_pos+1);
 				cursor_pos += 2;
+			} else if(keyboard_check_pressed(vk_right)){
+				__textbox_push_input__(str);
+				cursor_pos += 1;
 			} else {
 				__textbox_push_input__(str);
 			}
@@ -60,7 +63,8 @@ function __textbox_class_element__(struct) constructor{
 		draw_set_alpha(alpha);
 		draw_set_color(color);
 		
-		draw_text_transformed(x,y,string_insert(get_IME_string(),text,cursor_pos+1),xscale,yscale,0);
+		var _text = get_converted_text();
+		draw_text_transformed(x,y,_text,xscale,yscale,0);
 		
 		draw_set_halign(_halign_prev);
 		draw_set_valign(_valign_prev);
@@ -111,10 +115,8 @@ function __textbox_push_input__(str){
 }
 
 function __textbox_get_text_coord__(pos){
-	var _ime_string = get_IME_string();
-	
-	var _text = string_insert(_ime_string,text,pos+1);
-	pos += string_length(_ime_string);
+	var _text = get_converted_text(text);
+	pos = get_converted_cursor_pos(text,pos);
 	
 	var _text_full_line = string_copy(_text,1,string_pos_ext("\n",_text,pos));
 	if(string_pos_ext("\n",_text,pos) == 0){
@@ -175,7 +177,7 @@ function __textbox_get_text_coord__(pos){
 
 function __textbox_get_text_pos__(coord){
 	coord = variable_clone(coord);
-	var _text = text;
+	var _text = get_converted_text();
 	
 	var _font_prev = draw_get_font();
 	draw_set_font(font);
@@ -184,36 +186,50 @@ function __textbox_get_text_pos__(coord){
 	var _last_char_half_height = string_height(_last_char)*yscale/2;
 	draw_set_font(_font_prev);
 	
-	coord[0] += _last_char_half_width;
-	coord[1] += _last_char_half_height;
+	//coord[0] -= _last_char_half_width;
+	//coord[1] -= _last_char_half_height;
 	
 	//y
 	var	_dis,_next_dis;
-	var	_pos = 0;
-	var	_pos_2 = string_pos("\n",_text);
+	var	_pos = 1;
+	var	_pos_2 = string_pos("\n\u200B",_text);
+	if(_pos_2 == 0){
+		_pos_2 = string_length(_text);
+	}
 		
 	do{
 		_dis = abs(__textbox_get_text_coord__(_pos)[1] - coord[1]);
 		_next_dis = abs(__textbox_get_text_coord__(_pos_2)[1] - coord[1]);
-		_pos = string_pos_ext("\n",_text,_pos+1);
-		_pos_2 = string_pos_ext("\n",_text,_pos+1);//not same. a=a+1 -> b=a+1 -> b=a+2
-	}until(_pos_2 == 0 || _next_dis > _dis)
+		_pos = string_pos_ext("\n\u200B",_text,_pos+1)+1;
+		_pos_2 = string_pos_ext("\n\u200B",_text,_pos+1);
+	}until(_pos_2 == 1 || _next_dis > _dis)
 	
 	if(_pos_2 == 0){
 		_pos_2 = string_length(_text);
 	}
-	
+	//show_message($"{_pos} {_pos}")
 	//x
-	for(_pos = _pos; _pos < _pos_2; _pos++){
-		_dis = abs(__textbox_get_text_coord__(_pos)[1] - coord[1]);
-		_next_dis = abs(__textbox_get_text_coord__(_pos+1)[1] - coord[1]);
-		if(_next_dis < _dis){
+	for(_pos = _pos; _pos < _pos_2+1; _pos++){
+		_dis = abs(__textbox_get_text_coord__(_pos)[0] - coord[0]);
+		_next_dis = abs(__textbox_get_text_coord__(_pos+1)[0] - coord[0]);
+		if(_next_dis > _dis){
 			break;
 		}
 	}
 	
 	//result
 	return _pos;
+}
+
+function get_converted_text(text = self.text){
+	text = string_replace(text,"\t",tab_space_string);
+	text = string_insert(get_IME_string(),text,cursor_pos+1);
+	return text;
+}
+
+function get_converted_cursor_pos(text = self.text, cursor_pos = self.cursor_pos){
+	text = string_copy(text,1,cursor_pos);
+	return cursor_pos + string_count("\t",text)*tab_space_count + string_length(get_IME_string());
 }
 
 function get_IME_string(){
