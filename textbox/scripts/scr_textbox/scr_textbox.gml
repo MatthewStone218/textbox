@@ -92,8 +92,7 @@ function __textbox_class_element__(struct) constructor{
 		draw_set_color(_color_prev);
 	}
 	
-	function gain_focus(xx = mouse_x, yy = mouse_y, str = keyboard_string){
-		__textbox_push_input__(str);
+	function gain_focus(xx = mouse_x, yy = mouse_y){
 		cursor_pos = __textbox_get_text_pos__([xx,yy]);
 		cursor_drag_start_pos = cursor_pos;
 		is_focused = true;
@@ -191,27 +190,21 @@ function __textbox_get_text_pos__(coord){
 	//y
 	var _nearest_dis = 10000000000;
 	var _dis = 10000000000;
-	var _ln_pos = 0;
+	var _ln_pos = 1;
 	var _pos = 1;
 
-	while(_nearest_dis >= _dis){
+	while(_ln_pos >= _pos){
 		_pos = _ln_pos;
 		_ln_pos = string_pos_ext("\n",_text,_ln_pos+1);
 		if(_ln_pos > 0){
 			if(_nearest_dis >= _dis){
-				_nearest_dis = _dis;
 				_dis = abs(__textbox_get_text_coord__(_ln_pos)[1] - coord[1]);
+				_nearest_dis = _dis;
 			}
 		} else {
-			if(_nearest_dis >= _dis){
-				_nearest_dis = _dis;
-				_dis = abs(__textbox_get_text_coord__(string_length(_text))[1] - coord[1]);
-				_pos = _ln_pos;
-			}
 			break;
 		}
 	}
-	
 	//x
 	var _line = string_copy(_text, _ln_pos+1,string_length(_text));
 	var _ln_pos_2 = string_pos_ext("\n",_text,_ln_pos+1);
