@@ -9,7 +9,7 @@ function textbox(struct = {}){
 //빈 문자나 탭 문자는 모두 text에 당초 포함되는 게 전재. tab, ime만 계산시 직전 적용
 
 function __textbox_class_element__(struct) constructor{
-	text = "\u200B" + (struct[$"text"] ?? "") + "\u200B";
+	text = "\u200B" + (struct[$"text"] ?? "");
 	x = struct[$"x"] ?? x;
 	y = struct[$"y"] ?? y;
 	halign = struct[$"halign"] ?? fa_left;
@@ -118,8 +118,8 @@ function __textbox_get_text_coord__(pos){
 	var _text = get_converted_text(text);
 	pos = get_converted_cursor_pos(text,pos);
 	
-	var _text_full_line = string_copy(_text,1,string_pos_ext("\n",_text,pos));
-	if(string_pos_ext("\n",_text,pos) == 0){
+	var _text_full_line = string_copy(_text,1,string_pos_ext("\n\u200B",_text,pos));
+	if(string_pos_ext("\n\u200B",_text,pos) == 0){
 		_text_full_line = _text;
 	}
 	
@@ -130,12 +130,20 @@ function __textbox_get_text_coord__(pos){
 	
 	var _text_last_line = _text;
 	while(string_pos("\n",_text_last_line) > 0){
-		_text_last_line = string_delete(_text_last_line,1,string_pos("\n",_text_last_line));
+		if(string_count("\n\u200B",_text_last_line) == 1 && string_copy(_text_last_line,string_length(_text_last_line)-1,2) == "\n\u200B"){
+			_text_last_line = string_delete(_text_last_line,1,string_pos("\n\u200B",_text_last_line));
+			break;
+		}
+		_text_last_line = string_delete(_text_last_line,1,string_pos("\n\u200B",_text_last_line)+1);
 	}
 	
 	var _text_last_full_line = _text_full_line;
-	while(string_pos("\n",_text_last_full_line) > 0){
-		_text_last_full_line = string_delete(_text_last_full_line,1,string_pos("\n",_text_last_full_line));
+	while(string_pos("\n\u200B",_text_last_full_line) > 0){
+		if(string_count("\n\u200B",_text_last_full_line) == 1 && string_copy(_text_last_full_line,string_length(_text_last_full_line)-1,2) == "\n\u200B"){
+			_text_last_full_line = string_delete(_text_last_full_line,1,string_pos("\n\u200B",_text_last_full_line));
+			break;
+		}
+		_text_last_full_line = string_delete(_text_last_full_line,1,string_pos("\n\u200B",_text_last_full_line)+1);
 	}
 	
 	var _halign_prev = draw_get_halign();
@@ -177,50 +185,70 @@ function __textbox_get_text_coord__(pos){
 
 function __textbox_get_text_pos__(coord){
 	coord = variable_clone(coord);
+	show_debug_message("****************");
+	show_debug_message("입력 좌표: " + string(coord[0]) + ", " + string(coord[1]));
+
 	var _text = get_converted_text();
-	
+	show_debug_message("변환된 텍스트: " + _text);
+
 	var _font_prev = draw_get_font();
 	draw_set_font(font);
-	var _last_char = string_char_at(_text,string_length(_text));
-	var _last_char_half_width = string_width(_last_char)*xscale/2;
-	var _last_char_half_height = string_height(_last_char)*yscale/2;
+	var _last_char = string_char_at(_text, string_length(_text));
+	var _last_char_half_width = string_width(_last_char) * xscale / 2;
+	var _last_char_half_height = string_height(_last_char) * yscale / 2;
 	draw_set_font(_font_prev);
-	
+
 	coord[0] -= _last_char_half_width;
 	coord[1] -= _last_char_half_height;
-	
-	//y
-	var	_dis,_next_dis,_pos,_pos_2;
+	show_debug_message("보정된 좌표: " + string(coord[0]) + ", " + string(coord[1]));
+
+	// y 위치 결정
+	var _dis, _next_dis, _pos, _pos_2;
 	_pos = 0;
-	
-	do{
-		_pos = string_pos_ext("\n\u200B",_text,_pos+1);
-		if(_pos != 0){
-			_pos++;
+
+	do {
+		if(_pos == 0){
+			_pos = 1;
+		} else {
+			_pos = string_pos_ext("\n\u200B", _text, _pos + 1)+1;
 		}
-		_dis = abs(__textbox_get_text_coord__(_pos)[1] - coord[1]);
-		_pos_2 = string_pos_ext("\n\u200B",_text,_pos+1);
-		if(_pos_2 == 0){
-				_pos_2 = string_length(_text);
+		var y1 = __textbox_get_text_coord__(_pos)[1];
+		_dis = abs(y1 - coord[1]);
+		_pos_2 = string_pos_ext("\n\u200B", _text, _pos + 1);
+		if (_pos_2 == 0) {
+			_pos_2 = string_length(_text);
 		}
-		_next_dis = abs(__textbox_get_text_coord__(_pos_2+1)[1] - coord[1]);
-	}until(_pos_2 >= string_length(_text) || _next_dis > _dis)
-	//show_message($"{_pos} {_pos}")
-	//x
-	for(_pos = _pos; _pos < _pos_2+1; _pos++){
-		_dis = abs(__textbox_get_text_coord__(_pos)[0] - coord[0]);
-		_next_dis = abs(__textbox_get_text_coord__(_pos+1)[0] - coord[0]);
-		if(_next_dis > _dis){
+		var y2 = __textbox_get_text_coord__(_pos_2 + 1)[1];
+		_next_dis = abs(y2 - coord[1]);
+
+		show_debug_message("Y Loop - _pos: " + string(_pos) + ", _pos_2: " + string(_pos_2));
+		show_debug_message("         y1: " + string(y1) + ", y2: " + string(y2));
+		show_debug_message("         _dis: " + string(_dis) + ", _next_dis: " + string(_next_dis));
+	} until (_pos_2 >= string_length(_text) || _next_dis > _dis)
+/*
+	// x 위치 결정
+	for (_pos = _pos; _pos < _pos_2 + 1; _pos++) {
+		var x1 = __textbox_get_text_coord__(_pos)[0];
+		var x2 = __textbox_get_text_coord__(_pos + 1)[0];
+		_dis = abs(x1 - coord[0]);
+		_next_dis = abs(x2 - coord[0]);
+
+		show_debug_message("X Loop - _pos: " + string(_pos));
+		show_debug_message("         x1: " + string(x1) + ", x2: " + string(x2));
+		show_debug_message("         _dis: " + string(_dis) + ", _next_dis: " + string(_next_dis));
+
+		if (_next_dis > _dis) {
 			break;
 		}
-	}
-	
-	//result
+	}*/
+
+	show_debug_message("최종 커서 위치 반환: " + string(_pos));
 	return _pos;
 }
 
+
 function get_converted_text(text = self.text){
-	text = string_replace(text,"\t",tab_space_string);
+	text = string_replace_all(text,"\t",tab_space_string);
 	text = string_insert(get_IME_string(),text,cursor_pos+1);
 	return text;
 }
