@@ -80,14 +80,14 @@ function __textbox_class_element__(struct) constructor{
 		var _alpha_prev = draw_get_alpha();
 		var _color_prev = draw_get_color();
 	
-		draw_set_halign(fa_left);//intended
-		draw_set_valign(fa_top);
+		draw_set_halign(fa_center);//intended
+		draw_set_valign(fa_middle);
 		draw_set_font(font);
 		draw_set_alpha(alpha);
 		draw_set_color(color);
 		
 		var _coord = __textbox_get_text_coord__(cursor_pos);
-		draw_text_transformed(_coord[0],_coord[1],"|",xscale,yscale,0);
+		draw_text_transformed(_coord[0],_coord[1]+yscale*string_height("|")/2,"|",xscale,yscale,0);
 		
 		draw_set_halign(_halign_prev);
 		draw_set_valign(_valign_prev);
@@ -155,9 +155,9 @@ function __textbox_get_text_coord__(pos){
 	draw_set_font(font);
 	
 	var _height = (string_height(_text)-string_height(_text_last_full_line))*yscale;
-	var _last_line_width = string_width(_text_last_line)*xscale;
+	var _last_line_width = (string_width(_text_last_line)-string_width(string_char_at(_text_last_line,string_length(_text_last_line))))*xscale;
 	var _last_full_line_width = string_width(_text_last_full_line)*xscale;
-	
+
 	draw_set_halign(_halign_prev);
 	draw_set_valign(_valign_prev);
 	draw_set_font(_font_prev);
@@ -185,24 +185,19 @@ function __textbox_get_text_coord__(pos){
 
 function __textbox_get_text_pos__(coord){
 	coord = variable_clone(coord);
-	show_debug_message("****************");
-	show_debug_message("입력 좌표: " + string(coord[0]) + ", " + string(coord[1]));
 
 	var _text = get_converted_text();
-	show_debug_message("변환된 텍스트: " + _text);
 
 	var _font_prev = draw_get_font();
 	draw_set_font(font);
+	
 	var _last_char = string_char_at(_text, string_length(_text));
 	var _last_char_half_width = string_width(_last_char) * xscale / 2;
 	var _last_char_half_height = string_height(_last_char) * yscale / 2;
-	draw_set_font(_font_prev);
 
 	coord[0] -= _last_char_half_width;
 	coord[1] -= _last_char_half_height;
-	show_debug_message("보정된 좌표: " + string(coord[0]) + ", " + string(coord[1]));
-
-	// y 위치 결정
+	//y
 	var _dis, _next_dis, _pos, _pos_2;
 	_pos = 0;
 
@@ -212,6 +207,14 @@ function __textbox_get_text_pos__(coord){
 		} else {
 			_pos = string_pos_ext("\n\u200B", _text, _pos + 1)+1;
 		}
+		
+		var _text_line = string_char_at(_text, string_length(_text));
+		var _text_line_width = string_width(_text_line) * xscale / 2;
+		var _text_line_height = string_height(_text_line) * yscale / 2;
+
+		coord[0] -= _last_char_half_width;
+		coord[1] -= _last_char_half_height;
+		
 		var y1 = __textbox_get_text_coord__(_pos)[1];
 		_dis = abs(y1 - coord[1]);
 		_pos_2 = string_pos_ext("\n\u200B", _text, _pos + 1);
@@ -220,29 +223,24 @@ function __textbox_get_text_pos__(coord){
 		}
 		var y2 = __textbox_get_text_coord__(_pos_2 + 1)[1];
 		_next_dis = abs(y2 - coord[1]);
-
-		show_debug_message("Y Loop - _pos: " + string(_pos) + ", _pos_2: " + string(_pos_2));
-		show_debug_message("         y1: " + string(y1) + ", y2: " + string(y2));
-		show_debug_message("         _dis: " + string(_dis) + ", _next_dis: " + string(_next_dis));
 	} until (_pos_2 >= string_length(_text) || _next_dis > _dis)
-/*
+
 	// x 위치 결정
 	for (_pos = _pos; _pos < _pos_2 + 1; _pos++) {
+		if(string_char_at(_text,_pos) == "\n"){
+			continue;
+		}
 		var x1 = __textbox_get_text_coord__(_pos)[0];
 		var x2 = __textbox_get_text_coord__(_pos + 1)[0];
 		_dis = abs(x1 - coord[0]);
 		_next_dis = abs(x2 - coord[0]);
-
-		show_debug_message("X Loop - _pos: " + string(_pos));
-		show_debug_message("         x1: " + string(x1) + ", x2: " + string(x2));
-		show_debug_message("         _dis: " + string(_dis) + ", _next_dis: " + string(_next_dis));
-
 		if (_next_dis > _dis) {
 			break;
 		}
-	}*/
+	}
+	
+	draw_set_font(_font_prev);
 
-	show_debug_message("최종 커서 위치 반환: " + string(_pos));
 	return _pos;
 }
 
