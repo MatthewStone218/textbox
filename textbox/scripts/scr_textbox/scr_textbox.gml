@@ -186,27 +186,25 @@ function __textbox_get_text_pos__(coord){
 	var _last_char_half_height = string_height(_last_char)*yscale/2;
 	draw_set_font(_font_prev);
 	
-	//coord[0] -= _last_char_half_width;
-	//coord[1] -= _last_char_half_height;
+	coord[0] -= _last_char_half_width;
+	coord[1] -= _last_char_half_height;
 	
 	//y
-	var	_dis,_next_dis;
-	var	_pos = 1;
-	var	_pos_2 = string_pos("\n\u200B",_text);
-	if(_pos_2 == 0){
-		_pos_2 = string_length(_text);
-	}
-		
-	do{
-		_dis = abs(__textbox_get_text_coord__(_pos)[1] - coord[1]);
-		_next_dis = abs(__textbox_get_text_coord__(_pos_2)[1] - coord[1]);
-		_pos = string_pos_ext("\n\u200B",_text,_pos+1)+1;
-		_pos_2 = string_pos_ext("\n\u200B",_text,_pos+1);
-	}until(_pos_2 == 1 || _next_dis > _dis)
+	var	_dis,_next_dis,_pos,_pos_2;
+	_pos = 0;
 	
-	if(_pos_2 == 0){
-		_pos_2 = string_length(_text);
-	}
+	do{
+		_pos = string_pos_ext("\n\u200B",_text,_pos+1);
+		if(_pos != 0){
+			_pos++;
+		}
+		_dis = abs(__textbox_get_text_coord__(_pos)[1] - coord[1]);
+		_pos_2 = string_pos_ext("\n\u200B",_text,_pos+1);
+		if(_pos_2 == 0){
+				_pos_2 = string_length(_text);
+		}
+		_next_dis = abs(__textbox_get_text_coord__(_pos_2+1)[1] - coord[1]);
+	}until(_pos_2 >= string_length(_text) || _next_dis > _dis)
 	//show_message($"{_pos} {_pos}")
 	//x
 	for(_pos = _pos; _pos < _pos_2+1; _pos++){
